@@ -1,0 +1,71 @@
+ 
+ 
+ // Receive Dynamic Link
+    private void receiveLink() {
+
+        FirebaseDynamicLinks.getInstance()
+                .getDynamicLink(getIntent())
+                .addOnSuccessListener(this, new OnSuccessListener<PendingDynamicLinkData>() {
+                    @Override
+                    public void onSuccess(PendingDynamicLinkData pendingDynamicLinkData) {
+                        // Get deep link from result (may be null if no link is found)
+                        Uri deepLink = null;
+                        if (pendingDynamicLinkData != null) {
+
+                            deepLink = pendingDynamicLinkData.getLink();
+                            String result = deepLink.toString();
+                            Log.d(TAG, "dynamicLink: " + result);
+
+                            // REPLACE THE STATIC URL AND GET ONLY THE PART OF THE URL I NEED TO IDENTIFY THE TARGET PAGE
+                            String partialReference = result.replace("https://www.dugit.co.il/suunto-tutorials/", "");
+
+                            if (TextUtils.isEmpty(partialReference)){
+
+                                Log.d(TAG, "General Dynamic Link");
+
+                            } else {
+
+                                String reference = "Tutorials/" + partialReference;
+                                String[] parts = partialReference.split("/");
+                                String tutorialFamily = parts[0];
+                                String tutorialKey = parts[1];
+
+                                Log.d(TAG, "DYNAMIC_LINK: " + reference);
+                                Log.d(TAG, "FAMILY: " + tutorialFamily);
+                                Log.d(TAG, "KEY: " + tutorialKey);
+
+                                DatabaseReference tutRef = FirebaseDatabase.getInstance().getReference(reference);
+                                tutRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                                    @Override
+                                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                                        Tutorial tutorial = dataSnapshot.getValue(Tutorial.class);
+
+                                        if (tutorial != null){
+
+                                            Intent tutorialIntent = new Intent(MainActivity.this, TutorialSingleActivity.class);
+                                            tutorialIntent.putExtra("TUTORIAL_PARCEL", Parcels.wrap(tutorial));
+                                            tutorialIntent.putExtra("WATCH_FAMILY", tutorialFamily);
+                                            tutorialIntent.putExtra("TUTORIAL_KEY", tutorialKey);
+                                            startActivity(tutorialIntent);
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                    }
+                                });
+                            }
+                        }
+                    }
+
+                }).addOnFailureListener(this, new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.w(TAG, "getDynamicLink:onFailure", e);
+                    }
+                });
+    }
+    
+    
