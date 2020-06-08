@@ -1,4 +1,64 @@
+ // GENERATE DYNAMIC LINK
  
+    private void shareDynamicLink() {
+
+// Create key you can identify later 
+        String tutorialRef = mWatchKey + "/" + mTutorialKey;
+
+// Put the key in the long link
+        String longLink =
+                "https://dugitsupport.page.link/?link=https://www.dugit.co.il/suunto-tutorials/"
+                        +  tutorialRef
+                        + "&apn=il.co.solvi.suuntosupportisrael"                                 // App Package name
+                        + "&ofl=https://www.dugit.co.il/suunto-tutorials/"
+                        + "&ifl=https://www.dugit.co.il/suunto-tutorials/"
+                        + "&st=title of link"
+                        + "&sd=subtitle for link"
+                        + "&si=https://image.ibb.co/icon_for_link.png";
+
+        Log.d(TAG, "shareLink: " + longLink);
+
+// Using Firebase dynamic links package create a dynamic link-
+
+        Task<ShortDynamicLink> shortDynamicLinkTask =
+                FirebaseDynamicLinks.getInstance().createDynamicLink()
+                .setLongLink(Uri.parse(longLink))
+                .buildShortDynamicLink()
+                .addOnCompleteListener(TutorialSingleActivity.this, new OnCompleteListener<ShortDynamicLink>() {
+                    @Override
+                    public void onComplete(@NonNull Task<ShortDynamicLink> task) {
+
+                        if (task.isSuccessful()){
+
+                            Uri shortLink = task.getResult().getShortLink();
+                            String shortString = shortLink.toString();
+
+// Intent to share the link you created 
+
+                            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                            shareIntent.setType("text/plain");
+                            shareIntent.putExtra(Intent.EXTRA_SUBJECT, "Deep Link");
+                            shareIntent.putExtra(Intent.EXTRA_TEXT, shortString);
+                            startActivity(Intent.createChooser(shareIntent, "Share with..."));
+
+                        } else {
+
+                            task.addOnFailureListener(new OnFailureListener() {
+                                @Override
+                                public void onFailure(@NonNull Exception e) {
+
+                                    Log.d(TAG, "onFailure: " + e.toString());
+
+                                }
+                            });
+
+                            Toast.makeText(TutorialSingleActivity.this, "Try Again later...",
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    }
+                });
+    }
+
  
  // Receive Dynamic Link
     private void receiveLink() {
